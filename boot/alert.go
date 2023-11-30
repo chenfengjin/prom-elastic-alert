@@ -51,10 +51,11 @@ func (ac *AlertContent) GetAlertMessage(generatorURL string, msg AlertSampleMess
 	client := xelastic.NewElasticClient(msg.ES, msg.ES.Version)
 	hits, _, _ := client.FindByDSL(msg.Index, body, nil)
 	errorMsg := (hits[0].(map[string]any)["_source"].(map[string]any)["@message"]).(string)
-	//es_id := (hits[0].(map[string]any)["_id"]).(string)
+	appName := (hits[0].(map[string]any)["_source"].(map[string]any)["@appname"]).(string)
 
+	//es_id := (hits[0].(map[string]any)["_id"]).(string)
 	uniqueId := ac.Rule.UniqueId
-	payload := ac.getHttpPayload(generatorURL, errorMsg)
+	payload := ac.getHttpPayload(generatorURL, errorMsg, appName)
 	path := ac.Rule.FilePath
 	message := AlertMessage{
 		UniqueId: uniqueId,
@@ -70,7 +71,7 @@ func (ac *AlertContent) getUrlHashKey() string {
 	return utils.MD5(strings.Join(ac.Match.Ids, ""))
 }
 
-func (ac *AlertContent) getHttpPayload(generatorURL string, errorMsg string) string {
+func (ac *AlertContent) getHttpPayload(generatorURL string, errorMsg, appName string) string {
 	end := ac.EndsAt
 	ends := ""
 	if end != nil {
@@ -80,6 +81,7 @@ func (ac *AlertContent) getHttpPayload(generatorURL string, errorMsg string) str
 	data["value"] = fmt.Sprintf("%d", ac.Match.HitsNumber)
 	data["generatorURL"] = generatorURL
 	data["errorMsg"] = errorMsg
+	data["appname"] = appName
 	annotations := ac.mapCopy(ac.Rule.Query.Annotations)
 	ac.parseTemplate(annotations, data)
 	b := map[string]any{
@@ -88,6 +90,7 @@ func (ac *AlertContent) getHttpPayload(generatorURL string, errorMsg string) str
 		"startsAt":     ac.StartsAt.UTC().Format(time.RFC3339),
 		"generatorURL": generatorURL,
 	}
+	//fmt.Println(generatorURL)
 	if ends != "" {
 		b["endsAt"] = ends
 	}
