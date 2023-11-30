@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/dream-mo/prom-elastic-alert/conf"
-	"github.com/dream-mo/prom-elastic-alert/utils"
 	"html/template"
 	"strings"
 	"time"
+
+	"github.com/dream-mo/prom-elastic-alert/conf"
+	"github.com/dream-mo/prom-elastic-alert/utils"
+	"github.com/dream-mo/prom-elastic-alert/utils/xelastic"
 )
 
 type AlertState int
@@ -43,9 +45,16 @@ func (ac *AlertContent) HasResolved() bool {
 	return ac.State == Resolved
 }
 
-func (ac *AlertContent) GetAlertMessage(generatorURL string) string {
+func (ac *AlertContent) GetAlertMessage(generatorURL string, msg AlertSampleMessage) string {
+	body := conf.BuildFindByIdsDSLBody(msg.Ids)
+
+	client := xelastic.NewElasticClient(msg.ES, msg.ES.Version)
+	hits, _, _ := client.FindByDSL(msg.Index, body, nil)
+	errorMsg := (hits[0].(map[string]any)["_source"].(map[string]any)["@message"]).(string)
+	//es_id := (hits[0].(map[string]any)["_id"]).(string)
+
 	uniqueId := ac.Rule.UniqueId
-	payload := ac.getHttpPayload(generatorURL)
+	payload := ac.getHttpPayload(generatorURL, errorMsg)
 	path := ac.Rule.FilePath
 	message := AlertMessage{
 		UniqueId: uniqueId,
@@ -61,7 +70,7 @@ func (ac *AlertContent) getUrlHashKey() string {
 	return utils.MD5(strings.Join(ac.Match.Ids, ""))
 }
 
-func (ac *AlertContent) getHttpPayload(generatorURL string) string {
+func (ac *AlertContent) getHttpPayload(generatorURL string, errorMsg string) string {
 	end := ac.EndsAt
 	ends := ""
 	if end != nil {
@@ -69,6 +78,8 @@ func (ac *AlertContent) getHttpPayload(generatorURL string) string {
 	}
 	data := ac.mapCopy(ac.Rule.Query.Labels)
 	data["value"] = fmt.Sprintf("%d", ac.Match.HitsNumber)
+	data["generatorURL"] = generatorURL
+	data["errorMsg"] = errorMsg
 	annotations := ac.mapCopy(ac.Rule.Query.Annotations)
 	ac.parseTemplate(annotations, data)
 	b := map[string]any{

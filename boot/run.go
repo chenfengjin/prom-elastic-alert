@@ -5,6 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
+	"sync"
+	"sync/atomic"
+	"time"
+
 	"github.com/creasty/defaults"
 	"github.com/dream-mo/prom-elastic-alert/conf"
 	"github.com/dream-mo/prom-elastic-alert/utils/alertmanager"
@@ -15,10 +20,6 @@ import (
 	"github.com/go-co-op/gocron"
 	"github.com/go-redis/redis/v8"
 	"github.com/prometheus/client_golang/prometheus"
-	"math"
-	"sync"
-	"sync/atomic"
-	"time"
 )
 
 var (
@@ -354,7 +355,7 @@ func (ea *ElasticAlert) pushAlert() {
 		bs, _ := json.Marshal(msg)
 		redisx.Client.Set(ctx, redisKey, string(bs), ea.appConf.Alert.Generator.Expire.GetTimeDuration()).Result()
 		url := ea.appConf.Alert.Generator.BaseUrl + "?key=" + redisKey
-		message := alert.GetAlertMessage(url)
+		message := alert.GetAlertMessage(url, msg)
 		res := redisx.Client.LPush(ctx, redisx.AlertQueueListKey, message)
 		if e := res.Err(); e != nil {
 			go ea.addOpRedisMetrics(alert.Rule.UniqueId, alert.Rule.FilePath, "lpush", redisx.AlertQueueListKey, 0)
