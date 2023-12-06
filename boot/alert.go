@@ -52,10 +52,11 @@ func (ac *AlertContent) GetAlertMessage(generatorURL string, msg AlertSampleMess
 	hits, _, _ := client.FindByDSL(msg.Index, body, nil)
 	errorMsg := (hits[0].(map[string]any)["_source"].(map[string]any)["@message"]).(string)
 	appName := (hits[0].(map[string]any)["_source"].(map[string]any)["@appname"]).(string)
+	env := (hits[0].(map[string]any)["_source"].(map[string]any)["@env"]).(string)
 
 	//es_id := (hits[0].(map[string]any)["_id"]).(string)
 	uniqueId := ac.Rule.UniqueId
-	payload := ac.getHttpPayload(generatorURL, errorMsg, appName)
+	payload := ac.getHttpPayload(generatorURL, errorMsg, appName, env)
 	path := ac.Rule.FilePath
 	message := AlertMessage{
 		UniqueId: uniqueId,
@@ -71,7 +72,7 @@ func (ac *AlertContent) getUrlHashKey() string {
 	return utils.MD5(strings.Join(ac.Match.Ids, ""))
 }
 
-func (ac *AlertContent) getHttpPayload(generatorURL string, errorMsg, appName string) string {
+func (ac *AlertContent) getHttpPayload(generatorURL string, errorMsg, appName, env string) string {
 	end := ac.EndsAt
 	ends := ""
 	if end != nil {
@@ -82,6 +83,7 @@ func (ac *AlertContent) getHttpPayload(generatorURL string, errorMsg, appName st
 	data["generatorURL"] = generatorURL
 	data["errorMsg"] = errorMsg
 	data["appname"] = appName
+	data["env"] = env
 	annotations := ac.mapCopy(ac.Rule.Query.Annotations)
 	ac.parseTemplate(annotations, data)
 	b := map[string]any{
