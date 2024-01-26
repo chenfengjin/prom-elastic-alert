@@ -55,10 +55,15 @@ func (ac *AlertContent) GetAlertMessage(generatorURL string, msg AlertSampleMess
 	sourceI := hits[0].(map[string]any)["_source"]
 	if sourceI != nil {
 		source := sourceI.(map[string]any)
-
-		errorMsg = source["@message"].(string)
-		appName = source["@appname"].(string)
-		env = source["@env"].(string)
+		if source["@message"] != nil {
+			errorMsg = source["@message"].(string)
+		}
+		if source["@appname"] != nil {
+			appName = source["@appname"].(string)
+		}
+		if source["@env"] != nil {
+			env = source["@env"].(string)
+		}
 	}
 
 	extra := hits[0].(map[string]any)
