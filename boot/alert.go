@@ -51,7 +51,7 @@ func (ac *AlertContent) GetAlertMessage(generatorURL string, msg AlertSampleMess
 	client := xelastic.NewElasticClient(msg.ES, msg.ES.Version)
 	hits, _, _ := client.FindByDSL(msg.Index, body, nil)
 	var errorMsg, appName, env string
-
+	var extra map[string]any
 	sourceI := hits[0].(map[string]any)["_source"]
 	if sourceI != nil {
 		source := sourceI.(map[string]any)
@@ -64,9 +64,8 @@ func (ac *AlertContent) GetAlertMessage(generatorURL string, msg AlertSampleMess
 		if source["@env"] != nil {
 			env = source["@env"].(string)
 		}
+		extra = source
 	}
-
-	extra := hits[0].(map[string]any)
 
 	//es_id := (hits[0].(map[string]any)["_id"]).(string)
 	uniqueId := ac.Rule.UniqueId
