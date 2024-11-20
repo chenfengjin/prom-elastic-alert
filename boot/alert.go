@@ -45,18 +45,31 @@ func (ac *AlertContent) HasResolved() bool {
 	return ac.State == Resolved
 }
 
+const MaxMsgLength = 300 // 最大长度限制
+
+func setStackTraceMessage(msg string) string {
+	if len(msg) > MaxMsgLength {
+		return msg[:MaxMsgLength] // 截断到最大长度
+	}
+	return msg
+}
+
 func (ac *AlertContent) GetAlertMessage(generatorURL string, msg AlertSampleMessage) string {
 	body := conf.BuildFindByIdsDSLBody(msg.Ids)
 
 	client := xelastic.NewElasticClient(msg.ES, msg.ES.Version)
 	hits, _, _ := client.FindByDSL(msg.Index, body, nil)
-	var errorMsg, appName, env string
+	var errorMsg, appName, env, newStackTrace string
 	var extra map[string]any
 	sourceI := hits[0].(map[string]any)["_source"]
 	if sourceI != nil {
 		source := sourceI.(map[string]any)
+
+		if source["@stackTrace"] != nil {
+			newStackTrace = "; stackTrace: " + setStackTraceMessage(source["@stackTrace"].(string))
+		}
 		if source["@message"] != nil {
-			errorMsg = source["@message"].(string)
+			errorMsg = source["@message"].(string) + newStackTrace
 		}
 		if source["@appname"] != nil {
 			appName = source["@appname"].(string)
