@@ -65,9 +65,13 @@ func (ac *AlertContent) GetAlertMessage(generatorURL string, msg AlertSampleMess
 	if sourceI != nil {
 		source := sourceI.(map[string]any)
 
-		if source["@stackTrace"] != nil {
-			newStackTrace = "; stackTrace: " + setStackTraceMessage(source["@stackTrace"].(string))
+		if stackTrace, ok := source["@stackTrace"].(string); ok {
+			newStackTrace = "; stackTrace: " + setStackTraceMessage(stackTrace)
+		} else {
+			// 处理 @stackTrace 不存在或类型不匹配的情况
+			newStackTrace = ""
 		}
+
 		if source["@message"] != nil {
 			errorMsg = source["@message"].(string) + newStackTrace
 		}
