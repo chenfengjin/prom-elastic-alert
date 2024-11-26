@@ -66,14 +66,11 @@ func (ac *AlertContent) GetAlertMessage(generatorURL string, msg AlertSampleMess
 		source := sourceI.(map[string]any)
 
 		if stackTrace, ok := source["@stackTrace"].(string); ok {
-			newStackTrace = "; stackTrace: " + setStackTraceMessage(stackTrace)
-		} else {
-			// 处理 @stackTrace 不存在或类型不匹配的情况
-			newStackTrace = ""
+			newStackTrace = setStackTraceMessage(stackTrace)
 		}
 
 		if source["@message"] != nil {
-			errorMsg = source["@message"].(string) + newStackTrace
+			errorMsg = source["@message"].(string)
 		}
 		if source["@appname"] != nil {
 			appName = source["@appname"].(string)
@@ -86,7 +83,7 @@ func (ac *AlertContent) GetAlertMessage(generatorURL string, msg AlertSampleMess
 
 	//es_id := (hits[0].(map[string]any)["_id"]).(string)
 	uniqueId := ac.Rule.UniqueId
-	payload := ac.getHttpPayload(generatorURL, errorMsg, appName, env, extra)
+	payload := ac.getHttpPayload(generatorURL, errorMsg, appName, env, newStackTrace, extra)
 	path := ac.Rule.FilePath
 	message := AlertMessage{
 		UniqueId: uniqueId,
@@ -102,7 +99,7 @@ func (ac *AlertContent) getUrlHashKey() string {
 	return utils.MD5(strings.Join(ac.Match.Ids, ""))
 }
 
-func (ac *AlertContent) getHttpPayload(generatorURL string, errorMsg, appName, env string, extra map[string]any) string {
+func (ac *AlertContent) getHttpPayload(generatorURL string, errorMsg, appName, env, newStackTrace string, extra map[string]any) string {
 	end := ac.EndsAt
 	ends := ""
 	if end != nil {
@@ -111,6 +108,7 @@ func (ac *AlertContent) getHttpPayload(generatorURL string, errorMsg, appName, e
 	data := ac.mapCopy(ac.Rule.Query.Labels)
 	data["value"] = fmt.Sprintf("%d", ac.Match.HitsNumber)
 	data["generatorURL"] = generatorURL
+	data["newStackTrace"] = newStackTrace
 	data["errorMsg"] = errorMsg
 	data["appname"] = appName
 	data["env"] = env
