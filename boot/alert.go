@@ -45,16 +45,30 @@ func (ac *AlertContent) HasResolved() bool {
 	return ac.State == Resolved
 }
 
+const MaxMsgLength = 300 // 最大长度限制
+
+func setStackTraceMessage(msg string) string {
+	if len(msg) > MaxMsgLength {
+		return msg[:MaxMsgLength] // 截断到最大长度
+	}
+	return msg
+}
+
 func (ac *AlertContent) GetAlertMessage(generatorURL string, msg AlertSampleMessage) string {
 	body := conf.BuildFindByIdsDSLBody(msg.Ids)
 
 	client := xelastic.NewElasticClient(msg.ES, msg.ES.Version)
 	hits, _, _ := client.FindByDSL(msg.Index, body, nil)
-	var errorMsg, appName, env string
+	var errorMsg, appName, env, newStackTrace string
 	var extra map[string]any
 	sourceI := hits[0].(map[string]any)["_source"]
 	if sourceI != nil {
 		source := sourceI.(map[string]any)
+
+		if stackTrace, ok := source["@stackTrace"].(string); ok {
+			newStackTrace = setStackTraceMessage(stackTrace)
+		}
+
 		if source["@message"] != nil {
 			errorMsg = source["@message"].(string)
 		}
@@ -69,7 +83,7 @@ func (ac *AlertContent) GetAlertMessage(generatorURL string, msg AlertSampleMess
 
 	//es_id := (hits[0].(map[string]any)["_id"]).(string)
 	uniqueId := ac.Rule.UniqueId
-	payload := ac.getHttpPayload(generatorURL, errorMsg, appName, env, extra)
+	payload := ac.getHttpPayload(generatorURL, errorMsg, appName, env, newStackTrace, extra)
 	path := ac.Rule.FilePath
 	message := AlertMessage{
 		UniqueId: uniqueId,
@@ -85,7 +99,7 @@ func (ac *AlertContent) getUrlHashKey() string {
 	return utils.MD5(strings.Join(ac.Match.Ids, ""))
 }
 
-func (ac *AlertContent) getHttpPayload(generatorURL string, errorMsg, appName, env string, extra map[string]any) string {
+func (ac *AlertContent) getHttpPayload(generatorURL string, errorMsg, appName, env, newStackTrace string, extra map[string]any) string {
 	end := ac.EndsAt
 	ends := ""
 	if end != nil {
@@ -94,6 +108,7 @@ func (ac *AlertContent) getHttpPayload(generatorURL string, errorMsg, appName, e
 	data := ac.mapCopy(ac.Rule.Query.Labels)
 	data["value"] = fmt.Sprintf("%d", ac.Match.HitsNumber)
 	data["generatorURL"] = generatorURL
+	data["newStackTrace"] = newStackTrace
 	data["errorMsg"] = errorMsg
 	data["appname"] = appName
 	data["env"] = env
