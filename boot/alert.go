@@ -113,12 +113,10 @@ func (ac *AlertContent) getHttpPayload(generatorURL string, errorMsg, appName, e
 	data["appname"] = appName
 	data["env"] = env
 	for k, v := range extra {
-		fmt.Println(k, v)
 		if value, ok := v.(string); ok {
 			data[k] = value
 		}
 	}
-	fmt.Printf("data:%+v\n", data)
 	annotations := ac.mapCopy(ac.Rule.Query.Annotations)
 	ac.parseTemplate(annotations, data)
 	b := map[string]any{
@@ -127,7 +125,6 @@ func (ac *AlertContent) getHttpPayload(generatorURL string, errorMsg, appName, e
 		"startsAt":     ac.StartsAt.UTC().Format(time.RFC3339),
 		"generatorURL": generatorURL,
 	}
-	//fmt.Println(generatorURL)
 	if ends != "" {
 		b["endsAt"] = ends
 	}
