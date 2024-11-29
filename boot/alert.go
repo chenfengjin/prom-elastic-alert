@@ -122,7 +122,7 @@ func (ac *AlertContent) getHttpPayload(generatorURL string, errorMsg, appName, e
 	ac.parseTemplate(annotations, data)
 	b := map[string]any{
 		"labels":          ac.Rule.Query.Labels,
-		"annotations":     annotations,
+		"annotations":     annotationsJson,
 		"annotationsJson": annotationsJson,
 		"startsAt":        ac.StartsAt.UTC().Format(time.RFC3339),
 		"generatorURL":    generatorURL,
@@ -163,10 +163,14 @@ func (ac *AlertContent) mapCopy(m map[string]string) map[string]string {
 }
 
 func (ac *AlertContent) mapToJSON(m map[string]string) string {
-	data, err := json.Marshal(m)
+	data := map[string]string{}
+	for k, v := range m {
+		data[k] = v
+	}
+	jsonData, err := json.Marshal(data)
 	if err != nil {
 		fmt.Println("Error marshaling map to JSON:", err)
 		return "{}" // 返回一个空的 JSON 对象作为错误处理
 	}
-	return string(data)
+	return string(jsonData)
 }
