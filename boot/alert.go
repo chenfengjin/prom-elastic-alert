@@ -118,11 +118,11 @@ func (ac *AlertContent) getHttpPayload(generatorURL string, errorMsg, appName, e
 		}
 	}
 	annotations := ac.mapCopy(ac.Rule.Query.Annotations)
-	annotationsJson := ac.mapToJSON(ac.Rule.Query.Annotations)
+	annotationsJson := ac.mapToJSON(annotations, data)
 	ac.parseTemplate(annotations, data)
 	b := map[string]any{
 		"labels":          ac.Rule.Query.Labels,
-		"annotations":     annotationsJson,
+		"annotations":     annotations,
 		"annotationsJson": annotationsJson,
 		"startsAt":        ac.StartsAt.UTC().Format(time.RFC3339),
 		"generatorURL":    generatorURL,
@@ -162,15 +162,25 @@ func (ac *AlertContent) mapCopy(m map[string]string) map[string]string {
 	return data
 }
 
-func (ac *AlertContent) mapToJSON(m map[string]string) string {
-	data := map[string]string{}
-	for k, v := range m {
-		data[k] = v
+func (ac *AlertContent) mapToJSON(m map[string]string, data any) string {
+	result := make(map[string]string)
+	for k, tpl := range m {
+		t := template.New(k)
+		parse, err := t.Parse(tpl)
+		if err != nil {
+			continue
+		}
+		bf := bytes.NewBufferString("")
+		err = parse.Execute(bf, data)
+		if err != nil {
+			continue
+		} else {
+			result[k] = bf.String()
+		}
 	}
-	jsonData, err := json.Marshal(data)
+	jsonData, err := json.Marshal(result)
 	if err != nil {
-		fmt.Println("Error marshaling map to JSON:", err)
-		return "{}" // 返回一个空的 JSON 对象作为错误处理
+		return err.Error() // 返回错误
 	}
 	return string(jsonData)
 }
