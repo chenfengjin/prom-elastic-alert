@@ -47,7 +47,7 @@ func (ac *AlertContent) HasResolved() bool {
 
 const MaxMsgLength = 1024 // 最大长度限制
 
-func setStackTraceMessage(msg string) string {
+func setMessageLengthLimit(msg string) string {
 	if len(msg) > MaxMsgLength {
 		return msg[:MaxMsgLength] // 截断到最大长度
 	}
@@ -66,11 +66,13 @@ func (ac *AlertContent) GetAlertMessage(generatorURL string, msg AlertSampleMess
 		source := sourceI.(map[string]any)
 
 		if stackTrace, ok := source["@stackTrace"].(string); ok {
-			newStackTrace = setStackTraceMessage(stackTrace)
+			newStackTrace = setMessageLengthLimit(stackTrace)
 		}
 
 		if source["@message"] != nil {
-			errorMsg = setStackTraceMessage(source["@message"].(string))
+			errorMsg = setMessageLengthLimit(source["@message"].(string))
+		} else if source["message"] != nil {
+			errorMsg = setMessageLengthLimit(source["message"].(string))
 		}
 		if source["@appname"] != nil {
 			appName = source["@appname"].(string)
