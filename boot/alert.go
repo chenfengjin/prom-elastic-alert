@@ -122,7 +122,7 @@ func (ac *AlertContent) getHttpPayload(generatorURL string, errorMsg, appName, e
 	annotations := ac.mapCopy(ac.Rule.Query.Annotations)
 	ac.parseTemplate(annotations, data)
 	b := map[string]any{
-		"labels":       ac.Rule.Query.Labels,
+		"labels":       data,
 		"annotations":  annotations,
 		"startsAt":     ac.StartsAt.UTC().Format(time.RFC3339),
 		"generatorURL": generatorURL,
