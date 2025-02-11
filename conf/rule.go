@@ -227,6 +227,6 @@ properties:
       type: {type: string, enum: ["frequency"]}
       query_string: {type: string}
       config: {type: object, required: ["timeframe", "num_events"], properties: {timeframe: {type: object, required: [], properties: {minutes: {type: number}}}, num_events: {type: number}}}
-      labels: {type: object, required: ["alertname"], properties: {alertname: {type: string}, instance: {type: string}, errorMsg: {type: string}, severity: {type: string}, for_time: {type: string}, threshold: {type: string}}}
+      labels: {type: object, required: ["alertname"], properties: {alertname: {type: string}, instance: {type: string}, severity: {type: string}, for_time: {type: string}, threshold: {type: string}}}
       annotations: {type: object, required: [], properties: {description: {type: string}, summary: {type: string}}}
 `
