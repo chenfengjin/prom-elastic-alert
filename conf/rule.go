@@ -3,11 +3,12 @@ package conf
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/dream-mo/prom-elastic-alert/utils"
-	"github.com/dream-mo/prom-elastic-alert/utils/xtime"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/dream-mo/prom-elastic-alert/utils"
+	"github.com/dream-mo/prom-elastic-alert/utils/xtime"
 )
 
 type Rule struct {

@@ -8,7 +8,7 @@ es: #要查询的ES地址信息
   version: "v7"
 index: "nginx-error-*" #Index信息
 run_every: #查询任务频率
-  seconds: 5
+  seconds: 3
 query:
   type: "frequency" #默认frequency
   query_string: '$query_string' #query_string查询语句
